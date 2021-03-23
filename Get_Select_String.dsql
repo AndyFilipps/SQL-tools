@@ -5,13 +5,13 @@ GO
 ###################################################################################################################
 Example:
 -------------------------------------------------------------------------------------------------------------------
-DECLARE @Params_In_SQL_Out VARCHAR(MAX) = 'Types,Alias,TitleCase,No[]',@Table_Name VARCHAR(200)  = '[dbo].[Customers]'
+DECLARE @Params_In_SQL_Out VARCHAR(MAX) = 'Types,Alias,No[]',@Table_Name VARCHAR(200)  = '[dbo].[Customers]'
 EXEC dbo.Get_Select_String @Table_Name, @Params_In_SQL_Out OUTPUT 
 
-DECLARE @Params_In_SQL_Out VARCHAR(MAX) = 'Alias:TPC,Types',@Table_Name VARCHAR(200)  = '[dbo].[Customers]'
+DECLARE @Params_In_SQL_Out VARCHAR(MAX) = 'Alias:TC,Types',@Table_Name VARCHAR(200)  = '[dbo].[Customers]'
 EXEC dbo.Get_Select_String @Table_Name, @Params_In_SQL_Out OUTPUT 
 
-DECLARE @Params_In_SQL_Out VARCHAR(MAX) = 'Alias,TitleCase,No[]',@Table_Name VARCHAR(200)  = '[dbo].[Customers]'
+DECLARE @Params_In_SQL_Out VARCHAR(MAX) = 'Alias,No[]',@Table_Name VARCHAR(200)  = '[dbo].[Customers]'
 EXEC dbo.Get_Select_String @Table_Name, @Params_In_SQL_Out OUTPUT 
 
 DECLARE @Params_In_SQL_Out VARCHAR(MAX) = 'No[]',@Table_Name VARCHAR(200)  = '[dbo].[Customers]'
@@ -24,7 +24,7 @@ Depends on Parameters it can be just a list of names divided by a comma, or use 
 
 @Table_Name - Table name (with Schema) - table for get columns from
 @Params_In_SQL_Out - Param to return SQL statement. Can take some secondary parameters
-	can include values: 	'Types,Alias:YourAlias,TitleCase,No[],NoPrint'
+	can include values: 	'Types,Alias:YourAlias,No[],NoPrint'
 ###################################################################################################################
 */
 
@@ -42,7 +42,7 @@ BEGIN
 
 		DECLARE @Schema VARCHAR(100), @Table VARCHAR(200), @NunOfColumns INT
 		DECLARE @Dot INT = CHARINDEX('.',@Table_Name)
-		DECLARE @Types TINYINT = 0, @Alias TINYINT = 0, @TitleCase TINYINT = 0, @TableAlias VARCHAR(40), @Index INT
+		DECLARE @Types TINYINT = 0, @Alias TINYINT = 0, @TableAlias VARCHAR(40), @Index INT
 
 		SELECT 
 			@Schema = CASE WHEN @Dot = 0 THEN 'dbo' ELSE REPLACE(REPLACE(REPLACE(LEFT(@Table_Name,@Dot),'[',''),']',''),'.','') END,
@@ -63,8 +63,6 @@ BEGIN
 			SET @Types = 1
 		IF CHARINDEX('Alias',@Params) > 0
 			SET @Alias = 1
-		IF CHARINDEX('Title',@Params) > 0
-			SET @TitleCase = 1
 
 		IF OBJECT_ID('tempdb..#TableColums') IS NOT NULL DROP Table #TableColums;
 		CREATE Table #TableColums WITH (HEAP, DISTRIBUTION = Replicate) AS 
@@ -80,9 +78,6 @@ BEGIN
 		DECLARE @Delimiter VARCHAR(3) = '  '
 		DECLARE @SELECT_String VARCHAR(MAX) = ''
 		DECLARE @ColumnName VARCHAR(100) = ''
-
-		IF @TitleCase = 1
-			SET @TableAlias = dbo.uf_TitleCase(@TableAlias) 
 
 		WHILE (@Indicat <= @NunOfColumns)
 		BEGIN
@@ -122,10 +117,7 @@ BEGIN
 				CASE WHEN @Types = 1 THEN ColumnType + IsNullEnd ELSE '' END 
 			FROM CTE_ColumnInfo
 
-			IF @TitleCase = 1
-				SET @ColumnName = dbo.uf_TitleCase(@ColumnName) 
-
-			IF @TitleCase + @Types > 0
+			IF @Types > 0
 				SET @SELECT_String = @SELECT_String + ' AS [' + @ColumnName + ']'
 
 			SET @Params_In_SQL_Out = @Params_In_SQL_Out + CHAR(13) + CHAR(10) + CHAR(9) + @Delimiter + @SELECT_String  -- Use this if you want to get comma before every string
