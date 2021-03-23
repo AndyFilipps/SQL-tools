@@ -23,7 +23,7 @@ If the new table already exists - it's dropping it before creating
 @Table_Name - Name of the table to get all data and Metadata from
 @New_Table_Name - Table name we need to creat from the table. All metatadata and data will be the same.
 @Params_In_SQL_Out - Param to return string. 
-	-- can be: 	'Types,Alias:YourAlias,TitleCase,No[],NoPrint'
+	-- can be: 	'Types,Alias:YourAlias,No[],NoPrint'
 ###################################################################################################################
 */
 
@@ -44,7 +44,7 @@ BEGIN
 		
 		DECLARE @Table_DISTRIBUTION VARCHAR(100) = @Params + ',NoPrint', @Table_PARTITION VARCHAR(MAX) = @Params + ',NoPrint', @Table_INDEX VARCHAR(MAX) = @Params + ',NoPrint', @SELECT_String VARCHAR(MAX) = @Params + ',NoPrint'
 		DECLARE @Schema VARCHAR(100), @Table VARCHAR(200), @New_Schema VARCHAR(100), @New_Table VARCHAR(200)
-		DECLARE @Types BIT = 0, @Alias BIT = 0, @TitleCase BIT = 0, @NoBrackets BIT = 0, @TableAlias VARCHAR(40), @Index INT
+		DECLARE @TableAlias VARCHAR(40), @Index INT
 		DECLARE @Dot INT = CHARINDEX('.',@Table_Name)
 
 		SELECT 
@@ -69,22 +69,11 @@ BEGIN
 
 			SET @Params = REPLACE(REPLACE(@Params,'Table:' + @TableAlias,'Alias'),'Alias:' + @TableAlias,'Alias')-- If table include somehow one of the key word (like table, Type or Alias) - we have to remove it
 		END
-		IF CHARINDEX('Title',@Params) > 0
-			SET @TitleCase = 1
-
+		
 		EXEC dbo.Get_Index_String @Table_Name, @Table_INDEX OUTPUT 
 		EXEC dbo.Get_Distribution_String @Table_Name, @Table_DISTRIBUTION OUTPUT 
 		EXEC dbo.Get_Partition_String @Table_Name, @Table_PARTITION OUTPUT 
 		EXEC dbo.Get_Select_String @Table_Name, @SELECT_String OUTPUT 
-
-		IF @TitleCase = 1
-		BEGIN
-			SET @Schema = dbo.uf_TitleCase(@Schema) 
-			SET @Table = dbo.uf_TitleCase(@Table) 
-			SET @NEW_Schema = dbo.uf_TitleCase(@NEW_Schema) 
-			SET @NEW_Table = dbo.uf_TitleCase(@NEW_Table) 
-			SET @TableAlias = dbo.uf_TitleCase(@TableAlias) 
-		END	
 
 		-- First we have to drop existing table
 		SET @Params_In_SQL_Out = CHAR(13) + 'IF OBJECT_ID(''' + @New_Table_Name + ''',''U'') IS NOT NULL			DROP TABLE ' + @New_Table_Name + ';' 
